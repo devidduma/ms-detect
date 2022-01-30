@@ -2,7 +2,7 @@
 Multiple sclerosis detection from MRI images.
 
 #### Dataset
- - Dataset from [eHealth lab](http://www.medinfo.cs.ucy.ac.cy/index.php/facilities/32-software/218-datasets) of Department of Computer Science at University of Cyprus. ([Download link](http://www.medinfo.cs.ucy.ac.cy/old/doc/Publications/Datasets/MRIFreeDataset.zip))
+ - Dataset from [eHealth lab](http://www.medinfo.cs.ucy.ac.cy/index.php/facilities/32-software/218-datasets) of Department of Computer Science at University of Cyprus.
 
 #### MSWavelet
  - Applies continuous or discrete wavelet transformations to MRI images.
