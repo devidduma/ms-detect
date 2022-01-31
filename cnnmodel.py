@@ -29,9 +29,9 @@ class CNNModel:
         # Hyperparameters
         self.learningrate = 1e-3
         self.batchsize = 16
-        self.minibatchsize = 8
+        self.minibatchsize = 2
         self.batchsize_test = 4
-        self.epochs = 3
+        self.epochs = 2
         self.callbacks = []
         self.data_augment = True
 
@@ -83,22 +83,28 @@ class CNNModel:
     def build_model(self):
 
         cnn = tf.keras.Sequential([
-            tf.keras.layers.Conv2D(64, kernel_size=self.input_kernel_size, strides=2, padding="valid", activation="relu",
+            tf.keras.layers.Conv2D(64, kernel_size=self.input_kernel_size, strides=1, padding="valid", activation="relu",
                                    input_shape=(self.image_size, self.image_size, self.inputchannels), data_format="channels_last"),
+            tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
             tf.keras.layers.SpatialDropout2D(rate=0.3),tf.keras.layers.BatchNormalization(),
             tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Conv2D(32, kernel_size=4, strides=2, padding="valid", activation="relu"),
+            tf.keras.layers.Conv2D(32, kernel_size=4, strides=1, padding="valid", activation="relu"),
+            tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
             tf.keras.layers.SpatialDropout2D(rate=0.25),
             tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Conv2D(32, kernel_size=4, strides=2, padding="valid", activation="relu"),
+            tf.keras.layers.Conv2D(32, kernel_size=4, strides=1, padding="valid", activation="relu"),
+            tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
             tf.keras.layers.SpatialDropout2D(rate=0.2),
             tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Conv2D(32, kernel_size=4, strides=2, padding="valid", activation="relu"),
+            tf.keras.layers.Conv2D(32, kernel_size=4, strides=1, padding="valid", activation="relu"),
+            tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
             tf.keras.layers.SpatialDropout2D(rate=0.1),
             tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Conv2D(16, kernel_size=4, strides=2, padding="valid", activation="relu"),
+            tf.keras.layers.Conv2D(16, kernel_size=4, strides=1, padding="valid", activation="relu"),
+            tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
             tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Conv2D(4, kernel_size=3, strides=2, padding="valid", activation="relu"),
+            tf.keras.layers.Conv2D(4, kernel_size=3, strides=1, padding="valid", activation="relu"),
+            tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
             tf.keras.layers.BatchNormalization(),
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(128, activation="relu"),
