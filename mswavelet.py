@@ -327,7 +327,7 @@ class MSWavelet:
         return xi, yi
 
     # Supports batch upsampling, which is very fast
-    def upsample(self, files, size, mode="nearest", info=True):
+    def upsample(self, files, size, mode="bilinear", info=True):
         # torchlayer = torch.nn.UpsamplingNearest2d(size=(size, size))
 
         # cast to numpy array only if not already numpy array
@@ -402,34 +402,39 @@ class MSWavelet:
                 self.plot_discrete_wavelet_2d(wtlist[i], imgname, file=imgups)
 
     # generate training samples
-    def Xprocess(self, file, cwtlist, cwtscales):
+    def Xprocess(self, file, cwtlist, cwtscales, attach_original):
         # cast files to numpy array
         file = np.asarray(file)
 
         # List of results of Wavelet Transforms
         reswt = []
 
+        if attach_original:
+            attach = np.expand_dims(file, axis=0)
+            attach = np.asarray(attach, dtype=self.WT_DTYPE)
+            reswt.append(attach)
+
         # Continuous wavelet transforms
         for i in range(len(cwtlist)):
             res, _ = pywt.cwt(file, wavelet=cwtlist[i], scales=cwtscales[i])
-            res = np.asarray(res)
+            res = np.asarray(res, dtype=self.WT_DTYPE)
             # append only last WT
             reswt.append(res)
 
         # Concatenate channels from wavelet transforms
         # add wavelet transforms
-        res = np.asarray(np.concatenate(reswt, axis=0))
+        res = np.asarray(np.concatenate(reswt, axis=0), dtype=self.WT_DTYPE)
 
         return res
 
-    def batch_Xproc_outputdir(self, cwtlist, cwtscales, size=512):
+    def batch_Xproc_outputdir(self, cwtlist, cwtscales, size, attach_original):
         self.create_directories_output()
 
         for imgname in self.imagearray:
             imgfile = PIL.Image.open(self.tif_filename(imgname))
-            imgups = self.upsample(imgfile, size=512)
+            imgups = self.upsample(imgfile, size=size)
 
-            output = self.Xprocess(imgups, cwtlist, cwtscales)
+            output = self.Xprocess(imgups, cwtlist, cwtscales, attach_original)
             output = np.transpose(output, axes=(1,2,0))
             output = np.asarray(output, dtype=self.WT_DTYPE)
 
@@ -443,13 +448,16 @@ if __name__ == '__main__':
     msw = MSWavelet()
     msw.printinfo()
 
-    cwtlist = ["mexh", "fbsp", "cgau4"]
-    cwtscales = [12, 16, 15]
-    dwtlist = ["haar", "bior6.8"]
+    cwtlist = ["mexh", "fbsp"]
+    cwtscales = [12, 16]
+    dwtlist = ["haar"]
 
     # Batch continuous wavelet transform and save to disk
-    # msw.batch_Xproc_outputdir(cwtlist, cwtscales, size=512)
+    msw.batch_Xproc_outputdir(cwtlist, cwtscales, size=512, attach_original=True)
 
+    """
     # Plot unhealthy image + wavelet transforms
-    msw.plot_transforms(wtlist=cwtlist, type="continuous", cwtscales=cwtscales, imgname=msw.unhealthy_images[100])
+    cwtscales_plot = [np.arange(5, 20, 4), np.arange(5, 20, 4)]
+    msw.plot_transforms(wtlist=cwtlist, type="continuous", cwtscales=cwtscales_plot, imgname=msw.unhealthy_images[100])
     msw.plot_transforms(wtlist=dwtlist, type="discrete", imgname=msw.unhealthy_images[100])
+    """
