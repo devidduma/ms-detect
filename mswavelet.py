@@ -1,4 +1,6 @@
 import os
+import shutil
+
 import PIL.Image
 from mat4py import loadmat
 import PIL
@@ -10,9 +12,10 @@ import torch
 
 
 class MSWavelet:
-    def __init__(self, rootdir="./MRIFreeDataset"):
+    def __init__(self, rootdir="./MRIFreeDataset", outputdir="./Collected"):
         # Rootdir path
         self.rootdir = rootdir
+        self.outputdir = outputdir
 
         # Collect the MRI data
         self.imagearray = []
@@ -71,15 +74,50 @@ class MSWavelet:
             point_index = plaque.rfind(".")
 
             if plaque[im_index:underscore_index].lower() == "im":
-                self.unhealthy_images.append(plaque[:point_index])
-            elif plaque[:underscore_index] not in self.unhealthy_images:
-                self.unhealthy_images.append(plaque[:underscore_index])
+                self.unhealthy_images.append(self.tif_filename(plaque[:point_index]))
+            elif self.tif_filename(plaque[:underscore_index]) not in self.unhealthy_images:
+                self.unhealthy_images.append(self.tif_filename(plaque[:underscore_index]))
 
     def pop_healthy_images(self):
         for img in self.imagearray:
             point_index = img.rfind(".")
-            if img[:point_index] not in self.unhealthy_images:
-                self.healthy_images.append(img)
+            if self.tif_filename(img[:point_index]) not in self.unhealthy_images:
+                self.healthy_images.append(self.tif_filename(img[:point_index]))
+
+    def create_directories(self):
+        if not os.path.exists(self.outputdir):
+            os.makedirs(self.outputdir)
+
+        counter = 1
+        for src_path in self.unhealthy_images:
+            dst_folder = os.path.join(self.outputdir, "1")
+            if not os.path.exists(dst_folder):
+                os.makedirs(dst_folder)
+
+            basename = os.path.basename(self.tif_filename(src_path))
+            ext = os.path.splitext(basename)[1]
+            stripped = self.filename_stripped(basename)
+            stripped += "_" + str(counter)
+            basename = stripped + ext
+            counter += 1
+
+            dst = os.path.join(dst_folder, basename)
+            shutil.copyfile(self.tif_filename(src_path), dst)
+
+        for src_path in self.healthy_images:
+            dst_folder = os.path.join(self.outputdir, "0")
+            if not os.path.exists(dst_folder):
+                os.makedirs(dst_folder)
+
+            basename = os.path.basename(self.tif_filename(src_path))
+            ext = os.path.splitext(basename)[1]
+            stripped = self.filename_stripped(basename)
+            stripped += "_" + str(counter)
+            basename = stripped + ext
+            counter += 1
+
+            dst = os.path.join(dst_folder, basename)
+            shutil.copyfile(self.tif_filename(src_path), dst)
 
     def filename_stripped(self, filename):
         filename = str(filename)
@@ -396,6 +434,8 @@ if __name__ == '__main__':
     # Demo
     msw = MSWavelet()
     msw.printinfo()
+
+    msw.create_directories()
 
     """
     cwtlist = ["gaus4", "fbsp", "cmor", "shan", "cgau4"]
