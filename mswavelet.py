@@ -2,17 +2,17 @@ import os
 import shutil
 
 import PIL.Image
+import imageio
 from mat4py import loadmat
 import PIL
 import matplotlib.pyplot as plt
-from sklearn import covariance
 import numpy as np
 import pywt
 import torch
 
 
 class MSWavelet:
-    def __init__(self, rootdir="./MRIFreeDataset", outputdir="./Collected"):
+    def __init__(self, rootdir="./MRIFreeDataset", outputdir="./Result"):
         # Rootdir path
         self.rootdir = rootdir
         self.outputdir = outputdir
@@ -84,40 +84,37 @@ class MSWavelet:
             if self.tif_filename(img[:point_index]) not in self.unhealthy_images:
                 self.healthy_images.append(self.tif_filename(img[:point_index]))
 
-    def create_directories(self):
+    def head_path_depth(self, path, depth=1):
+        tail = ""
+
+        for d in range(depth):
+            tail = os.path.split(path)[1]
+            path = os.path.split(path)[0]
+
+        return path, tail
+
+    def output_path(self, imgpath):
+        imgpath = imgpath[len(self.rootdir) + 1:]
+        imgpath = os.path.join(self.outputdir, imgpath)
+
+        return imgpath
+
+    def create_directories_output(self):
         if not os.path.exists(self.outputdir):
             os.makedirs(self.outputdir)
 
-        counter = 1
-        for src_path in self.unhealthy_images:
-            dst_folder = os.path.join(self.outputdir, "1")
-            if not os.path.exists(dst_folder):
-                os.makedirs(dst_folder)
+        for imgpath in self.imagearray:
+            imgpath = self.output_path(imgpath)
 
-            basename = os.path.basename(self.tif_filename(src_path))
-            ext = os.path.splitext(basename)[1]
-            stripped = self.filename_stripped(basename)
-            stripped += "_" + str(counter)
-            basename = stripped + ext
-            counter += 1
+            os.makedirs(self.head_path_depth(imgpath, depth=3)[0], exist_ok=True)
+            os.makedirs(self.head_path_depth(imgpath, depth=2)[0], exist_ok=True)
+            os.makedirs(self.head_path_depth(imgpath, depth=1)[0], exist_ok=True)
 
-            dst = os.path.join(dst_folder, basename)
-            shutil.copyfile(self.tif_filename(src_path), dst)
+        for plaquepath in self.plaquearray:
+            outputpath = self.output_path(plaquepath)
 
-        for src_path in self.healthy_images:
-            dst_folder = os.path.join(self.outputdir, "0")
-            if not os.path.exists(dst_folder):
-                os.makedirs(dst_folder)
+            shutil.copy(plaquepath, outputpath)
 
-            basename = os.path.basename(self.tif_filename(src_path))
-            ext = os.path.splitext(basename)[1]
-            stripped = self.filename_stripped(basename)
-            stripped += "_" + str(counter)
-            basename = stripped + ext
-            counter += 1
-
-            dst = os.path.join(dst_folder, basename)
-            shutil.copyfile(self.tif_filename(src_path), dst)
 
     def filename_stripped(self, filename):
         filename = str(filename)
@@ -245,31 +242,6 @@ class MSWavelet:
 
         if ax == plt:
             plt.show()
-
-    def img_with_lesions(self, file, filename, original_size, dtype, size, color="black"):
-        if np.asarray(file).ndim != 2:
-            raise Exception("Only files with 2 dimensions are allowed for this method!")
-
-        pass
-
-    # Learn elliptic envelope for lesion
-    def fit_elliptic_curve(self, filename, index = 0, plot = True):
-        file = self.mat(filename, index)
-        x = np.concatenate((file["xi"], file["yi"]), axis=1)
-        # print(x.shape)
-
-        model = covariance.EllipticEnvelope()
-        scores = model.fit_predict(x)
-
-        if plot:
-            anom_index = np.where(scores==-1)
-            values = x[anom_index]
-
-            plt.scatter(x[:,0], x[:,1])
-            plt.scatter(values[:,0],values[:,1], color='r')
-            plt.show()
-
-        return model
 
     # Continuous Wavelet
     def plot_continuous_wavelet(self, wavelettype, filename=None, file=None, scales=np.arange(1,8,2), cmap=None):
@@ -429,45 +401,55 @@ class MSWavelet:
             elif type == "discrete":
                 self.plot_discrete_wavelet_2d(wtlist[i], imgname, file=imgups)
 
+    # generate training samples
+    def Xprocess(self, file, cwtlist, cwtscales):
+        # cast files to numpy array
+        file = np.asarray(file)
+
+        # List of results of Wavelet Transforms
+        reswt = []
+
+        # Continuous wavelet transforms
+        for i in range(len(cwtlist)):
+            res, _ = pywt.cwt(file, wavelet=cwtlist[i], scales=cwtscales[i])
+            res = np.asarray(res)
+            # append only last WT
+            reswt.append(res)
+
+        # Concatenate channels from wavelet transforms
+        # add wavelet transforms
+        res = np.asarray(np.concatenate(reswt, axis=0))
+
+        return res
+
+    def batch_Xproc_outputdir(self, cwtlist, cwtscales, size=512):
+        self.create_directories_output()
+
+        for imgname in self.imagearray:
+            imgfile = PIL.Image.open(self.tif_filename(imgname))
+            imgups = self.upsample(imgfile, size=512)
+
+            output = self.Xprocess(imgups, cwtlist, cwtscales)
+            output = np.transpose(output, axes=(1,2,0))
+            output = np.asarray(output, dtype=self.WT_DTYPE)
+
+            imgname, _ = os.path.splitext(imgname)
+            final_imgname = imgname + ".tiff"
+            path_to_save = self.output_path(final_imgname)
+            imageio.imwrite(path_to_save, output, format="tiff")
 
 if __name__ == '__main__':
     # Demo
     msw = MSWavelet()
     msw.printinfo()
 
-    msw.create_directories()
+    cwtlist = ["mexh", "fbsp", "cgau4"]
+    cwtscales = [12, 16, 15]
+    dwtlist = ["haar", "bior6.8"]
 
-    """
-    cwtlist = ["gaus4", "fbsp", "cmor", "shan", "cgau4"]
-    cwtscales = [np.arange(1,23,7)]*5
-    msw.plot_transforms(wtlist=cwtlist, type="continuous", cwtscales=cwtscales, imgname=msw.unhealthy_images[100])
-    """
-    """
-    # Batch Upsampling
-    print("Batch Upsampling:")
-    imgnames = msw.unhealthy_images[:20]
-    imgfiles = []
-    for imgname in imgnames:
-        imgfile = PIL.Image.open(msw.tif_filename(imgname))
-        imgfilenumpy = np.asarray(imgfile)
-        if imgfilenumpy.shape[0] == 512:
-            imgfiles.append(imgfilenumpy)
-    imgups = msw.upsample(imgfiles, size=1024)
-    print("Upscale images array: ", imgups.shape)
-
-    # Wavelet Transforms
-    dwtlist = ["bior6.8", "haar", "rbio4.4", "sym12"]
-    cwtlist = ["mexh", "morl", "gaus4"]
-    cwtscales = [np.arange(1,8,2), np.arange(1,20,6), np.arange(1,14,4)]
-
-    # Batch Wavelet Transforms
-    img, coeffs_dwt2 = pywt.dwt2(imgups, wavelet=dwtlist[0])
-    print("Batch DWT2D array shape: ", np.asarray(coeffs_dwt2).shape)
-    coeffs_cwt, freqs = pywt.cwt(imgups, wavelet=cwtlist[0], scales=np.arange(1,8,2))
-    print("Batch CWT array shape: ", np.asarray(coeffs_cwt).shape)
-    coeffs_dwt2, coeffs_cwt = [], []    # free memory
+    # Batch continuous wavelet transform and save to disk
+    # msw.batch_Xproc_outputdir(cwtlist, cwtscales, size=512)
 
     # Plot unhealthy image + wavelet transforms
     msw.plot_transforms(wtlist=cwtlist, type="continuous", cwtscales=cwtscales, imgname=msw.unhealthy_images[100])
     msw.plot_transforms(wtlist=dwtlist, type="discrete", imgname=msw.unhealthy_images[100])
-    """""
