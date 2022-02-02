@@ -12,7 +12,7 @@ import torch
 
 
 class MSWavelet:
-    def __init__(self, rootdir="./MRIFreeDataset", outputdir="./Result"):
+    def __init__(self, rootdir="./MRIFreeDataset", outputdir="./Preprocessed"):
         # Rootdir path
         self.rootdir = rootdir
         self.outputdir = outputdir
@@ -70,19 +70,32 @@ class MSWavelet:
     def pop_unhealthy_images(self):
         for plaque in self.plaquearray:
             underscore_index = plaque.rfind("_")
-            im_index = plaque.lower().rfind("im")
             point_index = plaque.rfind(".")
 
-            if plaque[im_index:underscore_index].lower() == "im":
-                self.unhealthy_images.append(self.tif_filename(plaque[:point_index]))
-            elif self.tif_filename(plaque[:underscore_index]) not in self.unhealthy_images:
-                self.unhealthy_images.append(self.tif_filename(plaque[:underscore_index]))
+            try:
+                candidate2 = self.tif_filename(plaque[:underscore_index])
+                if candidate2 not in self.unhealthy_images:
+                    self.unhealthy_images.append(candidate2)
+            except Exception as e:
+                pass
+
+            try:
+                candidate1 = self.tif_filename(plaque[:point_index])
+                if candidate1 not in self.unhealthy_images:
+                    self.unhealthy_images.append(candidate1)
+            except Exception as e:
+                pass
 
     def pop_healthy_images(self):
         for img in self.imagearray:
             point_index = img.rfind(".")
-            if self.tif_filename(img[:point_index]) not in self.unhealthy_images:
-                self.healthy_images.append(self.tif_filename(img[:point_index]))
+
+            try:
+                candidate = self.tif_filename(img[:point_index])
+                if candidate not in self.unhealthy_images:
+                    self.healthy_images.append(candidate)
+            except Exception as e:
+                pass
 
     def head_path_depth(self, path, depth=1):
         tail = ""
@@ -115,11 +128,10 @@ class MSWavelet:
 
             shutil.copy(plaquepath, outputpath)
 
-
     def filename_stripped(self, filename):
         filename = str(filename)
 
-        if filename.lower().endswith(".tif") or filename.lower().endswith(".bmp") or filename.lower().endswith(".tiff"):
+        if filename.lower().endswith(".tif") or filename.lower().endswith(".bmp"):
             point_index = filename.rfind(".")
             filename = filename[:point_index]
 
@@ -137,10 +149,6 @@ class MSWavelet:
             filename += ".tif"
         elif os.path.exists(filename + ".TIF"):
             filename += ".TIF"
-        elif os.path.exists(filename + ".tiff"):
-            filename += ".tiff"
-        elif os.path.exists(filename + ".TIFF"):
-            filename += ".TIFF"
         else:
             raise Exception("Filename not supported!", filename)
 
@@ -439,9 +447,12 @@ class MSWavelet:
             output = np.asarray(output, dtype=self.WT_DTYPE)
 
             imgname, _ = os.path.splitext(imgname)
-            final_imgname = imgname + ".tiff"
+            final_imgname = imgname + ".tif"
             path_to_save = self.output_path(final_imgname)
-            imageio.imwrite(path_to_save, output, format="tiff")
+            imageio.imwrite(path_to_save, output, format="tif")
+
+        print("Batch preprocessing finished!")
+
 
 if __name__ == '__main__':
     # Demo
