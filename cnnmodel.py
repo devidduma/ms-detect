@@ -19,7 +19,7 @@ class CustomCallback(tf.keras.callbacks.Callback):
 
 
 class CNNModel:
-    def __init__(self, rootdir="./MRIFreeDataset"):
+    def __init__(self, rootdir="MRIFreeDataset"):
         # Hyperparameters
         self.learningrate = 1e-3
         self.minibatchsize = 2
@@ -51,8 +51,8 @@ class CNNModel:
         self.image_size = 512
         self.input_kernel_size = 12
 
-        # Wavelet Transforms to apply
-        self.inputchannels = 1
+        # Input channels
+        self.inputchannels = 3
 
         # Print information
         print("CNNModel hyperparameters: ")
@@ -101,6 +101,10 @@ class CNNModel:
         self.healthyfilenames = self.msw.healthy_images
         self.filenames = self.unhealthyfilenames + self.healthyfilenames
 
+        self.filenames = self.__clean_array__(self.filenames)
+        self.unhealthyfilenames = self.__clean_array__(self.unhealthyfilenames)
+        self.healthyfilenames = self.__clean_array__(self.healthyfilenames)
+
         self.y = [str(1)]*len(self.unhealthyfilenames) + [str(0)]*len(self.healthyfilenames)
 
         # info
@@ -117,7 +121,8 @@ class CNNModel:
                 self.msw.tif_filename(filename=fname)
             except Exception as e:
                 continue
-            result.append(fname)
+
+            result.append(fname[len(self.rootdir) + 1:])
         return result
 
     # Helper for training
@@ -153,7 +158,7 @@ class CNNModel:
         datagen = self.image_data_generator(augment=True)
         genflow = datagen.flow_from_dataframe(dataframe, directory=self.rootdir,
                     target_size=(self.image_size, self.image_size), color_mode="grayscale",
-                    batch_size=self.minibatchsize, class_mode="binary")
+                    batch_size=self.minibatchsize, class_mode="binary", validate_filenames=False)
 
         dataframe_test = pd.DataFrame({
             "filename" : Xtest_fn,
@@ -162,7 +167,7 @@ class CNNModel:
         datagen_test = self.image_data_generator(augment=False)
         genflow_test = datagen_test.flow_from_dataframe(dataframe_test, directory=self.rootdir,
                     target_size=(self.image_size, self.image_size), color_mode="grayscale",
-                    batch_size=self.minibatchsize, class_mode="binary")
+                    batch_size=self.minibatchsize, class_mode="binary", validate_filenames=False)
 
         H = self.cnn.fit(genflow, epochs=self.epochs, verbose=True, callbacks=self.callbacks,
                          validation_data=genflow_test)
@@ -204,7 +209,7 @@ class CNNModel:
         datagen = self.image_data_generator(augment=False)
         genflow = datagen.flow_from_dataframe(dataframe, directory=self.rootdir,
                     target_size=(self.image_size, self.image_size), color_mode="grayscale",
-                    batch_size=self.minibatchsize, class_mode="binary")
+                    batch_size=self.minibatchsize, class_mode="binary", validate_filenames=False)
         scores = self.cnn.predict(genflow, verbose=True)
 
         scores = np.squeeze(scores, axis=1)
@@ -225,7 +230,7 @@ class CNNModel:
         plt.show()
 
 if __name__ == '__main__':
-    cnnmodel = CNNModel()
+    cnnmodel = CNNModel(rootdir="./Preprocessed")
     cnnmodel.pop_arrays_simple()
 
     cnnmodel.build_model()
