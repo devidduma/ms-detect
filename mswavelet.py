@@ -443,12 +443,12 @@ class MSWavelet:
 
             output = self.Xprocess(imgups, cwtlist, cwtscales, attach_original)
             output = np.transpose(output, axes=(1,2,0))
-            output = np.asarray(output, dtype=self.WT_DTYPE)
+            output = np.asarray(output, dtype=np.uint8)
 
             imgname, _ = os.path.splitext(imgname)
             final_imgname = imgname + ".tif"
             path_to_save = self.output_path(final_imgname)
-            imageio.imwrite(path_to_save, output, format="tif")
+            imageio.imwrite(path_to_save, output)
 
         print("Batch preprocessing finished!")
 
