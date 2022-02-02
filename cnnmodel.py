@@ -210,7 +210,8 @@ class CNNModel:
         datagen = self.image_data_generator(augment=False)
         genflow = datagen.flow_from_dataframe(dataframe, directory=self.rootdir,
                     target_size=(self.image_size, self.image_size), color_mode=self.color_mode,
-                    batch_size=self.minibatchsize, class_mode="binary", validate_filenames=False)
+                    batch_size=self.minibatchsize, class_mode="binary", validate_filenames=False,
+                    shuffle=False)
         scores = self.cnn.predict(genflow, verbose=True)
 
         scores = np.squeeze(scores, axis=1)
