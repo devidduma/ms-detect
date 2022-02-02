@@ -22,7 +22,7 @@ class CNNModel:
     def __init__(self, rootdir="MRIFreeDataset"):
         # Hyperparameters
         self.learningrate = 1e-3
-        self.minibatchsize = 2
+        self.minibatchsize = 1
         self.epochs = 20
         self.callbacks = []
 
@@ -53,6 +53,7 @@ class CNNModel:
 
         # Input channels
         self.inputchannels = 3
+        self.color_mode = "rgb"
 
         # Print information
         print("CNNModel hyperparameters: ")
@@ -157,7 +158,7 @@ class CNNModel:
         })
         datagen = self.image_data_generator(augment=True)
         genflow = datagen.flow_from_dataframe(dataframe, directory=self.rootdir,
-                    target_size=(self.image_size, self.image_size), color_mode="grayscale",
+                    target_size=(self.image_size, self.image_size), color_mode=self.color_mode,
                     batch_size=self.minibatchsize, class_mode="binary", validate_filenames=False)
 
         dataframe_test = pd.DataFrame({
@@ -166,7 +167,7 @@ class CNNModel:
         })
         datagen_test = self.image_data_generator(augment=False)
         genflow_test = datagen_test.flow_from_dataframe(dataframe_test, directory=self.rootdir,
-                    target_size=(self.image_size, self.image_size), color_mode="grayscale",
+                    target_size=(self.image_size, self.image_size), color_mode=self.color_mode,
                     batch_size=self.minibatchsize, class_mode="binary", validate_filenames=False)
 
         H = self.cnn.fit(genflow, epochs=self.epochs, verbose=True, callbacks=self.callbacks,
@@ -208,7 +209,7 @@ class CNNModel:
 
         datagen = self.image_data_generator(augment=False)
         genflow = datagen.flow_from_dataframe(dataframe, directory=self.rootdir,
-                    target_size=(self.image_size, self.image_size), color_mode="grayscale",
+                    target_size=(self.image_size, self.image_size), color_mode=self.color_mode,
                     batch_size=self.minibatchsize, class_mode="binary", validate_filenames=False)
         scores = self.cnn.predict(genflow, verbose=True)
 
@@ -233,5 +234,5 @@ if __name__ == '__main__':
     cnnmodel = CNNModel(rootdir="./Preprocessed")
     cnnmodel.pop_arrays_simple()
 
-    cnnmodel.build_model()
-    cnnmodel.train_model()
+    #cnnmodel.build_model()
+    #cnnmodel.train_model()
