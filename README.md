@@ -14,7 +14,4 @@ Multiple sclerosis detection from MRI images.
  - Refer to [CNNModel.ipynb](./CNNModel.ipynb) for a presentation.
 
 #### Results
- - Accuracy:    78.88%
- - Mean loss:   0.4581
- - Mean MSE:    0.1479
- - Mean MAE:    0.2692
+val_loss: 0.4444 - val_accuracy: 0.8108 - val_mse: 0.1434 - val_mae: 0.2738
