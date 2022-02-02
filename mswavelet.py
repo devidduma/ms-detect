@@ -1,6 +1,5 @@
 import os
 import shutil
-
 import PIL.Image
 import imageio
 from mat4py import loadmat

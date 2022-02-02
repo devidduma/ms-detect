@@ -2,7 +2,7 @@ from mswavelet import MSWavelet
 import numpy as np
 import tensorflow as tf
 import sklearn
-import pywt
+import sklearn.model_selection
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -45,21 +45,13 @@ class CNNModel:
         self.cnn = None
 
         # saves RAM, makes everything faster
-        self.DTYPE = np.uint8
         self.WT_DTYPE = np.float16
 
         # Upsampled images
         self.image_size = 512
         self.input_kernel_size = 12
-        """ Good combinations:
-        self.image_size = [512, 1024]
-        self.input_kernel_size = [12, 16]
-        """
 
         # Wavelet Transforms to apply
-        self.dwtlist = []
-        self.cwtlist = ["fbsp"]
-        self.cwtscales = [[25]]
         self.inputchannels = 1
 
         # Print information
@@ -127,36 +119,6 @@ class CNNModel:
                 continue
             result.append(fname)
         return result
-
-    # generate training samples
-    def Xprocess(self, file):
-        # cast files to numpy array
-        file = np.asarray(file, dtype=self.DTYPE)
-
-        # List of results of Wavelet Transforms
-        reswt = []
-
-        # Continuous wavelet transforms
-        for i in range(len(self.cwtlist)):
-            res, _ = pywt.cwt(file, wavelet=self.cwtlist[i], scales=self.cwtscales[i])
-            res = np.asarray(res, dtype=self.WT_DTYPE)
-            # append only last WT
-            reswt.append(res)
-
-        # Discrete wavelet transforms
-        for i in range(len(self.dwtlist)):
-            _, res = pywt.dwt2(file, wavelet=self.dwtlist[i])
-            res = np.asarray(res, dtype=self.WT_DTYPE)
-            # Upsample back to self.image_size x self.image_size
-            res = np.asarray(self.msw.upsample(res, size=self.image_size, info=False), dtype=self.WT_DTYPE)
-            # append only last WT
-            reswt.append(res)
-
-        # Concatenate channels from wavelet transforms
-        # add wavelet transforms
-        res = np.asarray(np.concatenate(reswt, axis=0), dtype=self.WT_DTYPE)
-
-        return res
 
     # Helper for training
     def image_data_generator(self, augment=False):
@@ -265,8 +227,6 @@ class CNNModel:
 if __name__ == '__main__':
     cnnmodel = CNNModel()
     cnnmodel.pop_arrays_simple()
-
-    print(cnnmodel.filenames[0])
 
     cnnmodel.build_model()
     cnnmodel.train_model()
