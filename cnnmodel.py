@@ -23,7 +23,7 @@ class CNNModel:
         # Hyperparameters
         self.learningrate = 1e-3
         self.minibatchsize = 1
-        self.epochs = 20
+        self.epochs = 25
         self.callbacks = []
 
         self.rootdir = rootdir
