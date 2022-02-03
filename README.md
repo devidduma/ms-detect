@@ -4,14 +4,12 @@ Multiple sclerosis detection from MRI images.
 #### Dataset
  - Dataset from [eHealth lab](http://www.medinfo.cs.ucy.ac.cy/index.php/facilities/32-software/218-datasets) of Department of Computer Science at University of Cyprus.
 
-#### MSWavelet
+#### MSWavelet ([ipynb](./MSWavelet.ipynb))
  - Applies continuous or discrete wavelet transformations to MRI images.
  - Important for preprocessing.
- - Refer to [MSWavelet.ipynb](./MSWavelet.ipynb) for a presentation.
 
-#### CNNModel
+#### CNNModel ([ipynb](./CNNModel.ipynb))
  - A convolutional neural network that predicts whether the input image is healthy or unhealthy.
- - Refer to [CNNModel.ipynb](./CNNModel.ipynb) for a presentation.
 
 #### Results
-val_loss: 0.4444 - val_accuracy: 0.8108 - val_mse: 0.1434 - val_mae: 0.2738
+val_loss: 0.4371 - val_accuracy: 0.8351 - val_mse: 0.1271 - val_mae: 0.2133
