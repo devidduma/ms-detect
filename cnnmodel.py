@@ -20,13 +20,24 @@ class CustomCallback(tf.keras.callbacks.Callback):
 
 class CNNModel:
     def __init__(self, rootdir="MRIFreeDataset"):
+        # Root directory
+        self.rootdir = rootdir
+
         # Hyperparameters
         self.learningrate = 1e-3
         self.minibatchsize = 1
         self.epochs = 25
-        self.callbacks = []
 
-        self.rootdir = rootdir
+        # Model Checkpoint callback
+        self.checkpoint_filepath = os.path.join(self.rootdir, 'best_model.h5')
+        model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+            filepath=self.checkpoint_filepath,
+            monitor='val_accuracy',
+            mode='max',
+            save_best_only=True
+        )
+        # Callbacks
+        self.callbacks = [model_checkpoint_callback]
 
         # define the train and val splits
         self.trainsplit = 0.8
@@ -68,7 +79,8 @@ class CNNModel:
             tf.keras.layers.Conv2D(4, kernel_size=self.input_kernel_size, strides=1, padding="valid", activation="relu",
                                    input_shape=(self.image_size, self.image_size, self.inputchannels), data_format="channels_last"),
             tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-            tf.keras.layers.SpatialDropout2D(rate=0.1),tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.SpatialDropout2D(rate=0.1),
+            tf.keras.layers.BatchNormalization(),
             tf.keras.layers.BatchNormalization(),
             tf.keras.layers.Conv2D(8, kernel_size=4, strides=1, padding="valid", activation="relu"),
             tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
@@ -173,11 +185,10 @@ class CNNModel:
         H = self.cnn.fit(genflow, epochs=self.epochs, verbose=True, callbacks=self.callbacks,
                          validation_data=genflow_test)
 
-        print("\n")
-
-        # Save model
-        self.cnn.save(os.path.join(self.msw.rootdir, 'model.h5'))
-        print("Training finished! Model saved at \"model.h5\".")
+        #print("\n")
+        # Save model:
+        # The model is already saved by the ModelCheckpoint callback!
+        # No need to do anything.
 
         print("\n\n")
 
@@ -187,18 +198,34 @@ class CNNModel:
         fig = plt.figure()
         fig.set_figwidth(8)
         fig.set_figheight(5)
-        plt.plot(np.arange(0, N), H.history["loss"], label="train_loss")
-        plt.plot(np.arange(0, N), H.history["val_loss"], label="val_loss")
-        plt.plot(np.arange(0, N), H.history["accuracy"], label="train_acc")
-        plt.plot(np.arange(0, N), H.history["val_accuracy"], label="val_acc")
-        plt.title("Plot of training loss and accuracy")
+        plt.plot(np.arange(0, N), H.history["loss"], label="training loss")
+        plt.plot(np.arange(0, N), H.history["val_loss"], label="validation loss")
+        plt.title("Training Loss Curve")
         plt.xlabel("Epoch")
-        plt.ylabel("Loss / Accuracy")
-        plt.legend(loc="lower left")
-        plt.savefig(os.path.join(self.rootdir, 'TrainingCurve.png'))
+        plt.ylabel("Loss")
+        plt.legend(loc="upper right")
+        plt.savefig(os.path.join(self.rootdir, 'LossCurve.png'))
+        plt.show()
+
+        plt.clf()
+        N = self.epochs
+        plt.style.use("fivethirtyeight")
+        fig = plt.figure()
+        fig.set_figwidth(8)
+        fig.set_figheight(5)
+        plt.plot(np.arange(0, N), H.history["accuracy"], label="training accuracy")
+        plt.plot(np.arange(0, N), H.history["val_accuracy"], label="validation accuracy")
+        plt.title("Training Accuracy Curve")
+        plt.xlabel("Epoch")
+        plt.ylabel("Accuracy")
+        plt.legend(loc="lower right")
+        plt.savefig(os.path.join(self.rootdir, 'AccuracyCurve.png'))
         plt.show()
 
     def test_model(self):
+        # Load best model
+        self.cnn = tf.keras.models.load_model(self.checkpoint_filepath)
+
         Xtest_fn = self.Xtest_fn
         ytest = self.ytest
 
@@ -223,11 +250,11 @@ class CNNModel:
         cm = sklearn.metrics.confusion_matrix(ytest, ypred_labels, labels=labels)
 
         print(cr, "\n")
-        disp = sklearn.metrics.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
-        disp.plot(cmap=plt.get_cmap("Blues"))
         fig = plt.figure()
         fig.set_figwidth(6)
         fig.set_figheight(6)
+        disp = sklearn.metrics.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
+        disp.plot(cmap=plt.get_cmap("Blues"))
         plt.savefig(os.path.join(self.rootdir, 'ConfusionMatrix.png'))
         plt.show()
 
