@@ -108,6 +108,32 @@ class CNNModel:
         self.cnn = cnn
         return cnn
 
+    def build_model_EfficientNetB0(self):
+        cnn_base = tf.keras.applications.efficientnet.EfficientNetB0(
+            include_top=False, weights='imagenet',
+            input_tensor=tf.keras.Input(shape=(self.image_size, self.image_size, self.inputchannels))
+        )
+
+        for layer in cnn_base.layers[:]:
+            layer.trainable = False
+
+        cnn = cnn_base.output
+        cnn = tf.keras.layers.AveragePooling2D(pool_size=(4,4))(cnn)
+        cnn = tf.keras.layers.Flatten()(cnn)
+        cnn = tf.keras.layers.Dense(64, activation="relu")(cnn)
+        cnn = tf.keras.layers.Dense(16, activation="relu")(cnn)
+        cnn = tf.keras.layers.Dense(8, activation="relu")(cnn)
+        cnn = tf.keras.layers.Dense(1, activation="sigmoid")(cnn)
+        cnn = tf.keras.Model(inputs=cnn_base.input, outputs=cnn)
+
+        cnn.summary()
+        cnn.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.learningrate), loss="binary_crossentropy",
+                    metrics=["accuracy", "mse", 'mae'])
+
+        self.cnn = cnn
+        return cnn
+
+
     def pop_arrays_simple(self):
         self.unhealthyfilenames = self.msw.unhealthy_images
         self.healthyfilenames = self.msw.healthy_images
@@ -155,7 +181,7 @@ class CNNModel:
 
         return datagen
 
-    def train_model(self):
+    def train_model(self, augment=True):
         # Split into train and test sets
         self.Xtrain_fn, self.Xtest_fn, self.ytrain, self.ytest = sklearn.model_selection.train_test_split(self.filenames, self.y, stratify=self.y, random_state=42, train_size=self.trainsplit)
 
@@ -168,7 +194,7 @@ class CNNModel:
             "filename" : Xtrain_fn,
             "class" : ytrain
         })
-        datagen = self.image_data_generator(augment=True)
+        datagen = self.image_data_generator(augment=augment)
         genflow = datagen.flow_from_dataframe(dataframe, directory=self.rootdir,
                     target_size=(self.image_size, self.image_size), color_mode=self.color_mode,
                     batch_size=self.minibatchsize, class_mode="binary", validate_filenames=False)
@@ -262,5 +288,13 @@ if __name__ == '__main__':
     cnnmodel = CNNModel(rootdir="./Preprocessed")
     cnnmodel.pop_arrays_simple()
 
-    #cnnmodel.build_model()
-    #cnnmodel.train_model()
+    """
+    cnnmodel.build_model_EfficientNetB0()
+    cnnmodel.train_model(augment=False)
+    cnnmodel.test_model()
+    """
+    """
+    cnnmodel.build_model()
+    cnnmodel.train_model()
+    cnnmodel.test_model()
+    """
