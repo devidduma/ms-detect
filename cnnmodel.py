@@ -26,7 +26,7 @@ class CNNModel:
         # Hyperparameters
         self.learningrate = 1e-3
         self.minibatchsize = 1
-        self.epochs = 25
+        self.epochs = 30
 
         # Model Checkpoint callback
         self.checkpoint_filepath = os.path.join(self.rootdir, 'best_model.h5')
@@ -76,22 +76,21 @@ class CNNModel:
 
     def build_model(self):
         cnn = tf.keras.Sequential([
-            tf.keras.layers.Conv2D(4, kernel_size=self.input_kernel_size, strides=1, padding="valid", activation="relu",
+            tf.keras.layers.Conv2D(4, kernel_size=self.input_kernel_size, strides=1, padding="valid", activation="selu",
                                    input_shape=(self.image_size, self.image_size, self.inputchannels), data_format="channels_last"),
             tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
             tf.keras.layers.SpatialDropout2D(rate=0.1),
             tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Conv2D(8, kernel_size=4, strides=1, padding="valid", activation="relu"),
+            tf.keras.layers.Conv2D(8, kernel_size=4, strides=1, padding="valid", activation="selu"),
             tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
             tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Conv2D(4, kernel_size=4, strides=1, padding="valid", activation="relu"),
+            tf.keras.layers.Conv2D(4, kernel_size=4, strides=1, padding="valid", activation="selu"),
             tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
             tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Conv2D(2, kernel_size=4, strides=1, padding="valid", activation="relu"),
+            tf.keras.layers.Conv2D(2, kernel_size=4, strides=1, padding="valid", activation="selu"),
             tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
             tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Conv2D(1, kernel_size=4, strides=1, padding="valid", activation="relu"),
+            tf.keras.layers.Conv2D(1, kernel_size=4, strides=1, padding="valid", activation="selu"),
             tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
             tf.keras.layers.BatchNormalization(),
             tf.keras.layers.Flatten(),
@@ -142,8 +141,9 @@ class CNNModel:
     def image_data_generator(self, augment=False):
         if augment:
             datagen = tf.keras.preprocessing.image.ImageDataGenerator(
-                rotation_range=5,
+                rotation_range=15,
                 horizontal_flip=True,
+                zoom_range=0.1,
                 data_format="channels_last",
                 dtype=self.WT_DTYPE
             )

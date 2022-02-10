@@ -12,4 +12,4 @@ Multiple sclerosis detection from MRI images.
  - A convolutional neural network that predicts whether the input image is healthy or unhealthy.
 
 #### Results
-val_loss: 0.4371 - val_accuracy: 0.8351 - val_mse: 0.1271 - val_mae: 0.2133
+val_loss: 0.4376 - val_accuracy: 0.8297 - val_mse: 0.1396 - val_mae: 0.2852
