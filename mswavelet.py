@@ -251,7 +251,7 @@ class MSWavelet:
             plt.show()
 
     # Continuous Wavelet
-    def plot_continuous_wavelet(self, wavelettype, filename=None, file=None, scales=np.arange(1,8,2), cmap=None):
+    def plot_continuous_wavelet(self, wavelettype, filename=None, file=None, scales=np.arange(1, 8, 2), cmap=None):
         # Load image
         # original = pywt.data.camera()
         if file is not None:
@@ -375,7 +375,7 @@ class MSWavelet:
         newimg = np.array(newimg, dtype=originaltype)
 
         # Return with original shape and type
-        newimg = newimg.reshape(newimg.shape[4-ndims:])
+        newimg = newimg.reshape(newimg.shape[4 - ndims:])
         newimg = np.array(newimg, dtype=originaltype)
 
         if info:
@@ -435,14 +435,21 @@ class MSWavelet:
         return res
 
     def batch_Xproc_outputdir(self, cwtlist, cwtscales, size, attach_original):
+        print("Starting batch preprocessing phase...")
+
         self.create_directories_output()
 
         for imgname in self.imagearray:
             imgfile = PIL.Image.open(self.tif_filename(imgname))
-            imgups = self.upsample(imgfile, size=size)
+
+            # in case it is a 512x512 file, clean the sides
+            if np.asarray(imgfile).shape[-1] == 512:
+                imgfile = self.clean_images512_sides(imgfile)
+
+            imgups = self.upsample(imgfile, size=size, info=False)
 
             output = self.Xprocess(imgups, cwtlist, cwtscales, attach_original)
-            output = np.transpose(output, axes=(1,2,0))
+            output = np.transpose(output, axes=(1, 2, 0))
             output = np.asarray(output, dtype=np.uint8)
 
             imgname, _ = os.path.splitext(imgname)
@@ -452,11 +459,49 @@ class MSWavelet:
 
         print("Batch preprocessing finished!")
 
+    def clean_images512_sides(self, img):
+        img = np.array(img)
+        if img.shape[-1] != 512:
+            raise Exception("It is meant to clean only 512x512 images!")
+
+        fillvalue = 0
+        topleft, bottomright = (70, 50), (70, 50)
+        bottomleft = (65, 65)
+        right = (35, 167, 190)
+
+        for icol in range(topleft[0]):
+            for irow in range(topleft[1]):
+                img[irow, icol] = fillvalue
+
+        for icol in range(bottomright[0]):
+            for irow in range(bottomright[1]):
+                img[img.shape[0] - 1 - irow, img.shape[1] - 1 - icol] = fillvalue
+
+        for icol in range(bottomleft[0]):
+            for irow in range(bottomleft[1]):
+                img[img.shape[0] - 1 - irow, icol] = fillvalue
+
+        for icol in range(right[0]):
+            for irow in range(right[1], right[2]):
+                img[irow, img.shape[1] - 1 - icol] = fillvalue
+
+        return img
+
 
 if __name__ == '__main__':
     # Demo
-    msw = MSWavelet()
+    msw = MSWavelet(outputdir="./PreprocessedV2")
     msw.printinfo()
+
+    """
+    imgname = msw.unhealthy_images[110]
+    img = PIL.Image.open(imgname)
+    imgclean = msw.clean_images512_sides(img)
+    plt.imshow(X=img, interpolation="nearest")
+    plt.show()
+    plt.imshow(X=imgclean, interpolation="nearest")
+    plt.show()
+    """
 
     cwtlist = ["mexh", "fbsp"]
     cwtscales = [12, 16]
