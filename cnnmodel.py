@@ -118,8 +118,7 @@ class CNNModel:
             layer.trainable = False
 
         cnn = cnn_base.output
-        cnn = tf.keras.layers.AveragePooling2D(pool_size=(4,4))(cnn)
-        cnn = tf.keras.layers.Flatten()(cnn)
+        cnn = tf.keras.layers.GlobalAveragePooling2D()(cnn)
         cnn = tf.keras.layers.Dense(64, activation="relu")(cnn)
         cnn = tf.keras.layers.Dense(16, activation="relu")(cnn)
         cnn = tf.keras.layers.Dense(8, activation="relu")(cnn)
@@ -265,6 +264,7 @@ class CNNModel:
                     target_size=(self.image_size, self.image_size), color_mode=self.color_mode,
                     batch_size=self.minibatchsize, class_mode="binary", validate_filenames=False,
                     shuffle=False)
+        self.cnn.evaluate(genflow, verbose=True)
         scores = self.cnn.predict(genflow, verbose=True)
 
         scores = np.squeeze(scores, axis=1)
