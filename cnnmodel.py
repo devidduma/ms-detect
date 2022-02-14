@@ -1,3 +1,5 @@
+import PIL.Image
+
 from mswavelet import MSWavelet
 import numpy as np
 import tensorflow as tf
@@ -284,10 +286,29 @@ class CNNModel:
         plt.savefig(os.path.join(self.rootdir, 'ConfusionMatrix.png'))
         plt.show()
 
+    def apply_data_augmentation(self, imgpath, input_dir="./MRIFreeDataset", output_dir="./data_augment"):
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        img = PIL.Image.open(os.path.join(input_dir, imgpath))
+        imgexp = np.expand_dims(np.asarray(img), 0)
+        imgexp = np.transpose(imgexp, axes=(1, 2, 0))
+        imgexp = np.expand_dims(imgexp, 0)
+
+        datagen = self.image_data_generator(augment=True)
+        datagen.fit(imgexp)
+        for x, val in zip(datagen.flow(imgexp, save_to_dir=output_dir, save_prefix="aug", save_format="png"),
+                          range(10)):
+            pass
+
+
 if __name__ == '__main__':
     cnnmodel = CNNModel(rootdir="./Preprocessed")
     cnnmodel.pop_arrays_simple()
 
+    """
+    cnnmodel.apply_data_augmentation(imgpath=cnnmodel.unhealthyfilenames[100], input_dir="./MRIFreeDataset", output_dir="./data_augment")
+    """
     """
     cnnmodel.build_model_EfficientNetB0()
     cnnmodel.train_model(augment=False)
