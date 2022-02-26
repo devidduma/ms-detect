@@ -7,7 +7,7 @@ import sklearn.model_selection
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-import squeezenet_model
+from squeezenet_model import SqueezeNet
 
 
 class CustomCallback(tf.keras.callbacks.Callback):
@@ -135,9 +135,8 @@ class CNNModel:
         return cnn
 
     def build_model_SqueezeNet(self):
-        self.cnn = squeezenet_model.SqueezeNet(nb_classes=1000,
-                                               inputs=(self.image_size, self.image_size, self.inputchannels),
-                                               num_channels=16)
+        self.cnn = SqueezeNet(inputs=(self.image_size, self.image_size, self.inputchannels),
+                            num_channels=8).model()
         self.cnn.summary()
         self.cnn.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.learningrate), loss="binary_crossentropy",
                     metrics=["accuracy", "mse", "mae"])
@@ -313,6 +312,7 @@ if __name__ == '__main__':
     cnnmodel = CNNModel(rootdir="./Preprocessed")
     cnnmodel.pop_arrays_simple()
 
+    cnnmodel.build_model_SqueezeNet()
     """
     cnnmodel.apply_data_augmentation(imgpath=cnnmodel.unhealthyfilenames[100], input_dir="./MRIFreeDataset", output_dir="./data_augment")
     """
