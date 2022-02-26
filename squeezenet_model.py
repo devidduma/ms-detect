@@ -79,7 +79,7 @@ class SqueezeNet:
         skip_conn7 = Concatenate(name="skip_conn7", axis=self.axis)([merge7, merge6])
         maxpool7 = MaxPooling2D(
             pool_size=(3, 3), strides=strides, name='maxpool7',
-            data_format=self.data_format)(skip_conn5)
+            data_format=self.data_format)(skip_conn7)
 
         merge8 = self.fire_module(inputlayer=maxpool7, num_channels=16)
         merge9 = self.fire_module(inputlayer=merge8, num_channels=16)
