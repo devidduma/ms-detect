@@ -135,8 +135,7 @@ class CNNModel:
         return cnn
 
     def build_model_SqueezeNet(self):
-        self.cnn = SqueezeNet(inputs=(self.image_size, self.image_size, self.inputchannels),
-                            num_channels=8).model()
+        self.cnn = SqueezeNet(inputs=(self.image_size, self.image_size, self.inputchannels)).model()
         self.cnn.summary()
         self.cnn.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.learningrate), loss="binary_crossentropy",
                     metrics=["accuracy", "mse", "mae"])

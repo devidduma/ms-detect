@@ -7,8 +7,7 @@ from tensorflow.keras.layers import Dense
 
 
 class SqueezeNet:
-    def __init__(self, num_channels=8, inputs=(512, 512, 3), data_format="channels_last"):
-        self.num_channels = num_channels
+    def __init__(self, inputs=(512, 512, 3), data_format="channels_last"):
         self.inputs = inputs
         self.data_format = data_format
 
@@ -21,17 +20,17 @@ class SqueezeNet:
 
         self.firemodule_counter = 1
 
-    def fire_module(self, inputlayer):
+    def fire_module(self, inputlayer, num_channels):
         fire_squeeze = Convolution2D(
-            self.num_channels, (1, 1), activation='relu', kernel_initializer='glorot_uniform',
+            num_channels, (1, 1), activation='relu', kernel_initializer='glorot_uniform',
             padding='same', name='squeeze_fire' + str(self.firemodule_counter),
             data_format=self.data_format)(inputlayer)
         fire_expand1 = Convolution2D(
-            self.num_channels, (1, 1), activation='relu', kernel_initializer='glorot_uniform',
+            num_channels, (1, 1), activation='relu', kernel_initializer='glorot_uniform',
             padding='same', name='expand1_fire' + str(self.firemodule_counter),
             data_format=self.data_format)(fire_squeeze)
         fire_expand2 = Convolution2D(
-            self.num_channels, (3, 3), activation='relu', kernel_initializer='glorot_uniform',
+            num_channels, (3, 3), activation='relu', kernel_initializer='glorot_uniform',
             padding='same', name='expand2_fire' + str(self.firemodule_counter),
             data_format=self.data_format)(fire_squeeze)
         merge = Concatenate(name="merge" + str(self.firemodule_counter),
@@ -47,60 +46,47 @@ class SqueezeNet:
         inputs -- shape of the input images (channel, cols, rows)
         """
 
+        strides=(3, 3)
+
         input_img = Input(shape=self.inputs)
 
         conv1 = Convolution2D(
-            2*self.num_channels, (7, 7), activation='relu', kernel_initializer='glorot_uniform',
-            strides=(2, 2), padding='same', name='conv1',
+            16, (9, 9), activation='relu', kernel_initializer='glorot_uniform',
+            strides=(1, 1), padding='same', name='conv1',
             data_format=self.data_format)(input_img)
         maxpool1 = MaxPooling2D(
-            pool_size=(3, 3), strides=(2, 2), name='maxpool1',
+            pool_size=(3, 3), strides=strides, name='maxpool1',
             data_format=self.data_format)(conv1)
 
         self.firemodule_counter = 2
 
-        merge2 = self.fire_module(inputlayer=maxpool1)
-
-        merge3 = self.fire_module(inputlayer=merge2)
+        merge2 = self.fire_module(inputlayer=maxpool1, num_channels=16)
+        merge3 = self.fire_module(inputlayer=merge2, num_channels=16)
         skip_conn3 = Concatenate(name="skip_conn3", axis=self.axis)([merge3, merge2])
+        maxpool3 = MaxPooling2D(
+            pool_size=(3, 3), strides=strides, name='maxpool3',
+            data_format=self.data_format)(skip_conn3)
 
-        merge4 = self.fire_module(inputlayer=skip_conn3)
-        skip_conn4 = Concatenate(name="skip_conn4", axis=self.axis)([merge4, merge3])
-        maxpool4 = MaxPooling2D(
-            pool_size=(3, 3), strides=(2, 2), name='maxpool4',
-            data_format=self.data_format)(skip_conn4)
+        merge4 = self.fire_module(inputlayer=maxpool3, num_channels=16)
+        merge5 = self.fire_module(inputlayer=merge4, num_channels=16)
+        skip_conn5 = Concatenate(name="skip_conn5", axis=self.axis)([merge5, merge4])
+        maxpool5 = MaxPooling2D(
+            pool_size=(3, 3), strides=strides, name='maxpool5',
+            data_format=self.data_format)(skip_conn5)
 
-        merge5 = self.fire_module(inputlayer=maxpool4)
-        skip_conn5 = Concatenate(name="skip_conn5", axis=self.axis)([merge5, maxpool4])
-
-        merge6 = self.fire_module(inputlayer=skip_conn5)
-        skip_conn6 = Concatenate(name="skip_conn6", axis=self.axis)([merge6, merge5])
-
-        merge7 = self.fire_module(inputlayer=skip_conn6)
+        merge6 = self.fire_module(inputlayer=maxpool5, num_channels=16)
+        merge7 = self.fire_module(inputlayer=merge6, num_channels=16)
         skip_conn7 = Concatenate(name="skip_conn7", axis=self.axis)([merge7, merge6])
+        maxpool7 = MaxPooling2D(
+            pool_size=(3, 3), strides=strides, name='maxpool7',
+            data_format=self.data_format)(skip_conn5)
 
-        merge8 = self.fire_module(inputlayer=skip_conn7)
-        skip_conn8 = Concatenate(name="skip_conn8", axis=self.axis)([merge8, merge7])
-        maxpool8 = MaxPooling2D(
-            pool_size=(3, 3), strides=(2, 2), name='maxpool8',
-            data_format=self.data_format)(skip_conn8)
-
-        merge9 = self.fire_module(inputlayer=maxpool8)
-        skip_conn9 = Concatenate(name="skip_conn9", axis=self.axis)([merge9, maxpool8])
-
-        merge10 = self.fire_module(inputlayer=skip_conn9)
-        skip_conn10 = Concatenate(name="skip_conn10", axis=self.axis)([merge10, merge9])
-        maxpool10 = MaxPooling2D(
-            pool_size=(3, 3), strides=(2, 2), name='maxpool10',
-            data_format=self.data_format)(skip_conn10)
-
-        merge11 = self.fire_module(inputlayer=maxpool10)
-        skip_conn11 = Concatenate(name="skip_conn11", axis=self.axis)([merge11, maxpool10])
-
-        merge12 = self.fire_module(inputlayer=skip_conn11)
-        maxpool12 = MaxPooling2D(
-            pool_size=(3, 3), strides=(2, 2), name='maxpool12',
-            data_format=self.data_format)(merge12)
+        merge8 = self.fire_module(inputlayer=maxpool7, num_channels=16)
+        merge9 = self.fire_module(inputlayer=merge8, num_channels=16)
+        skip_conn9 = Concatenate(name="skip_conn9", axis=self.axis)([merge9, merge8])
+        maxpool9 = MaxPooling2D(
+            pool_size=(3, 3), strides=strides, name='maxpool9',
+            data_format=self.data_format)(skip_conn9)
 
         """
         #dropout10 = Dropout(0.5, name='dropout10')(maxpool10)
@@ -109,9 +95,7 @@ class SqueezeNet:
             padding='valid', name='conv11',
             data_format=data_format)(dropout10)
         """
-        #global_avgpool11 = GlobalAveragePooling2D(data_format=data_format)(maxpool10)
-
-        flatten = Flatten(name="flatten", data_format=self.data_format)(maxpool12)
-        sigmoid = Dense(1, name="sigmoid", activation="sigmoid")(flatten)
+        global_avgpool10 = GlobalAveragePooling2D(data_format=self.data_format)(maxpool9)
+        sigmoid = Dense(1, name="sigmoid", activation="sigmoid")(global_avgpool10)
 
         return Model(inputs=input_img, outputs=sigmoid)
