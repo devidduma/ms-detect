@@ -1,5 +1,4 @@
 import PIL.Image
-
 from mswavelet import MSWavelet
 import numpy as np
 import tensorflow as tf
@@ -8,6 +7,7 @@ import sklearn.model_selection
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+import squeezenet_model
 
 
 class CustomCallback(tf.keras.callbacks.Callback):
@@ -105,7 +105,7 @@ class CNNModel:
 
         cnn.summary()
         cnn.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.learningrate), loss="binary_crossentropy",
-                    metrics=["accuracy", "mse", 'mae'])
+                    metrics=["accuracy", "mse", "mae"])
 
         self.cnn = cnn
         return cnn
@@ -129,11 +129,18 @@ class CNNModel:
 
         cnn.summary()
         cnn.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.learningrate), loss="binary_crossentropy",
-                    metrics=["accuracy", "mse", 'mae'])
+                    metrics=["accuracy", "mse", "mae"])
 
         self.cnn = cnn
         return cnn
 
+    def build_model_SqueezeNet(self):
+        self.cnn = squeezenet_model.SqueezeNet(nb_classes=1000,
+                                               inputs=(self.image_size, self.image_size, self.inputchannels),
+                                               num_channels=16)
+        self.cnn.summary()
+        self.cnn.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.learningrate), loss="binary_crossentropy",
+                    metrics=["accuracy", "mse", "mae"])
 
     def pop_arrays_simple(self):
         self.unhealthyfilenames = self.msw.unhealthy_images
@@ -312,6 +319,11 @@ if __name__ == '__main__':
     """
     cnnmodel.build_model_EfficientNetB0()
     cnnmodel.train_model(augment=False)
+    cnnmodel.test_model()
+    """
+    """
+    cnnmodel.build_model_SqueezeNet()
+    cnnmodel.train_model()
     cnnmodel.test_model()
     """
     """
