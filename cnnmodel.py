@@ -137,6 +137,7 @@ class CNNModel:
     def build_model_SqueezeNet(self):
         self.cnn = SqueezeNet(inputs=(self.image_size, self.image_size, self.inputchannels)).model()
         self.cnn.summary()
+        #lr = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=0.04)
         self.cnn.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.learningrate), loss="binary_crossentropy",
                     metrics=["accuracy", "mse", "mae"])
 
