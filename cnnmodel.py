@@ -76,7 +76,7 @@ class CNNModel:
         print("Train/Test split: ", self.trainsplit)
         print("")
 
-    def build_model(self):
+    def build_model_AlexNet(self):
         cnn = tf.keras.Sequential([
             tf.keras.layers.Conv2D(4, kernel_size=self.input_kernel_size, strides=1, padding="valid", activation="selu",
                                    input_shape=(self.image_size, self.image_size, self.inputchannels), data_format="channels_last"),
@@ -110,7 +110,7 @@ class CNNModel:
         self.cnn = cnn
         return cnn
 
-    def build_model_EfficientNetB0(self):
+    def transfer_learning_EfficientNetB0(self):
         cnn_base = tf.keras.applications.efficientnet.EfficientNetB0(
             include_top=False, weights='imagenet',
             input_tensor=tf.keras.Input(shape=(self.image_size, self.image_size, self.inputchannels))
@@ -317,17 +317,17 @@ if __name__ == '__main__':
     cnnmodel.apply_data_augmentation(imgpath=cnnmodel.unhealthyfilenames[100], input_dir="./MRIFreeDataset", output_dir="./data_augment")
     """
     """
-    cnnmodel.build_model_EfficientNetB0()
+    cnnmodel.transfer_learning_EfficientNetB0()
     cnnmodel.train_model(augment=False)
     cnnmodel.test_model()
     """
     """
     cnnmodel.build_model_SqueezeNet()
-    cnnmodel.train_model()
+    cnnmodel.train_model(augment=True)
     cnnmodel.test_model()
     """
     """
-    cnnmodel.build_model()
-    cnnmodel.train_model()
+    cnnmodel.build_model_AlexNet()
+    cnnmodel.train_model(augment=True)
     cnnmodel.test_model()
     """
