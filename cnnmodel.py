@@ -8,6 +8,8 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 from squeezenet_model import SqueezeNet
+from alexnet_model import AlexNet
+from transferlearning_efficientnet import TL_EfficientNetB0
 
 
 class CustomCallback(tf.keras.callbacks.Callback):
@@ -65,7 +67,7 @@ class CNNModel:
         self.input_kernel_size = 12
 
         # Input channels
-        self.inputchannels = 3
+        self.input_channels = 3
         self.color_mode = "rgb"
 
         # Print information
@@ -77,67 +79,20 @@ class CNNModel:
         print("")
 
     def build_model_AlexNet(self):
-        cnn = tf.keras.Sequential([
-            tf.keras.layers.Conv2D(4, kernel_size=self.input_kernel_size, strides=1, padding="valid", activation="selu",
-                                   input_shape=(self.image_size, self.image_size, self.inputchannels), data_format="channels_last"),
-            tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-            tf.keras.layers.SpatialDropout2D(rate=0.1),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Conv2D(8, kernel_size=4, strides=1, padding="valid", activation="selu"),
-            tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Conv2D(4, kernel_size=4, strides=1, padding="valid", activation="selu"),
-            tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Conv2D(2, kernel_size=4, strides=1, padding="valid", activation="selu"),
-            tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Conv2D(1, kernel_size=4, strides=1, padding="valid", activation="selu"),
-            tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(32, activation="relu"),
-            tf.keras.layers.Dropout(0.1),
-            tf.keras.layers.Dense(16, activation="relu"),
-            tf.keras.layers.Dense(8, activation="relu"),
-            tf.keras.layers.Dense(1, activation="sigmoid")
-        ])
-
-        cnn.summary()
-        cnn.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.learningrate), loss="binary_crossentropy",
+        self.cnn = AlexNet(inputs=(self.image_size, self.image_size, self.input_channels)).model()
+        self.cnn.summary()
+        self.cnn.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.learningrate), loss="binary_crossentropy",
                     metrics=["accuracy", "mse", "mae"])
-
-        self.cnn = cnn
-        return cnn
-
-    def transfer_learning_EfficientNetB0(self):
-        cnn_base = tf.keras.applications.efficientnet.EfficientNetB0(
-            include_top=False, weights='imagenet',
-            input_tensor=tf.keras.Input(shape=(self.image_size, self.image_size, self.inputchannels))
-        )
-
-        for layer in cnn_base.layers[:]:
-            layer.trainable = False
-
-        cnn = cnn_base.output
-        cnn = tf.keras.layers.GlobalAveragePooling2D()(cnn)
-        cnn = tf.keras.layers.Dense(64, activation="relu")(cnn)
-        cnn = tf.keras.layers.Dense(16, activation="relu")(cnn)
-        cnn = tf.keras.layers.Dense(8, activation="relu")(cnn)
-        cnn = tf.keras.layers.Dense(1, activation="sigmoid")(cnn)
-        cnn = tf.keras.Model(inputs=cnn_base.input, outputs=cnn)
-
-        cnn.summary()
-        cnn.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.learningrate), loss="binary_crossentropy",
-                    metrics=["accuracy", "mse", "mae"])
-
-        self.cnn = cnn
-        return cnn
 
     def build_model_SqueezeNet(self):
-        self.cnn = SqueezeNet(inputs=(self.image_size, self.image_size, self.inputchannels)).model()
+        self.cnn = SqueezeNet(inputs=(self.image_size, self.image_size, self.input_channels)).model()
         self.cnn.summary()
-        #lr = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=0.04)
+        self.cnn.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.learningrate), loss="binary_crossentropy",
+                    metrics=["accuracy", "mse", "mae"])
+
+    def transfer_learning_EfficientNetB0(self):
+        self.cnn = TL_EfficientNetB0(inputs=(self.image_size, self.image_size, self.input_channels)).model()
+        self.cnn.summary()
         self.cnn.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.learningrate), loss="binary_crossentropy",
                     metrics=["accuracy", "mse", "mae"])
 
@@ -312,21 +267,17 @@ if __name__ == '__main__':
     cnnmodel = CNNModel(rootdir="./Preprocessed")
     cnnmodel.pop_arrays_simple()
 
-    cnnmodel.build_model_SqueezeNet()
     """
     cnnmodel.apply_data_augmentation(imgpath=cnnmodel.unhealthyfilenames[100], input_dir="./MRIFreeDataset", output_dir="./data_augment")
-    """
-    """
+
     cnnmodel.transfer_learning_EfficientNetB0()
     cnnmodel.train_model(augment=False)
     cnnmodel.test_model()
-    """
-    """
+
     cnnmodel.build_model_SqueezeNet()
     cnnmodel.train_model(augment=True)
     cnnmodel.test_model()
-    """
-    """
+
     cnnmodel.build_model_AlexNet()
     cnnmodel.train_model(augment=True)
     cnnmodel.test_model()
