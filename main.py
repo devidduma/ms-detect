@@ -7,9 +7,9 @@ import sklearn.model_selection
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-from squeezenet_model import SqueezeNet
-from alexnet_model import AlexNet
-from transferlearning_efficientnet import TL_EfficientNetB0
+from models.squeezenet_model import SqueezeNet
+from models.alexnet_model import AlexNet
+from models.transferlearning_efficientnet import TL_EfficientNetB0
 
 
 class CustomCallback(tf.keras.callbacks.Callback):
