@@ -9,7 +9,7 @@ Multiple sclerosis detection from MRI images.
  - Binary classification with CNN: predict whether the input image is healthy or unhealthy using CNN with AlexNet or SqueezeNet macro-architectures.
 
 #### Presentations
- - Wavelet Transformations: ([ipynb](presentations/preprocessing/mswavelet_presentation.ipynb))
+ - Wavelet Transformations: ([ipynb](presentations/preprocessing/mswavelet_presentation.ipynb)) 
  - Batch Wavelet Transformations: ([ipynb](presentations/preprocessing/dataset_preprocessing_batch.ipynb))
  - AlexNet results: ([AlexNet ipynb](presentations/cnn/alexnet_results.ipynb))
  - SqueezeNet results: ([SqueezeNet ipynb](presentations/cnn/squeezenet_results.ipynb))
