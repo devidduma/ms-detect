@@ -1,0 +1,8 @@
+Pillow
+Mat4py
+matplotlib
+scikit-learn
+Numpy
+PyWavelets
+torch
+tensorflow
